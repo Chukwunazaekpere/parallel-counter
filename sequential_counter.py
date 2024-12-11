@@ -45,7 +45,7 @@ class SequentialCounter():
     def count_elements_occurrences(self):
         """Count elements occurrences in generated aarray"""
         generated_array = self.generate_array_elements()
-        print("\n\t generated_array: ", generated_array)
+        # print("\n\t generated_array: ", generated_array)
         counter_dict = {}
         for elemnts in generated_array:
             try:

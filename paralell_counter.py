@@ -36,20 +36,34 @@ def generate_array_elements(array_length):
     """Generate random elements to fill array"""
     array = []
     for val in range(0, array_length):
-        array.append(random.randint(2, 100)) # generate random array elements between 2 & 100
+        array.append(random.randint(2, 500)) # generate random array elements between 2 & 100
     return array
+
+@omp
+def final_result_proc(child_result:dict, final_result:dict):
+    child_dict_keys = child_result.keys()
+    final_result_keys = final_result.keys()
+    for idx in range(0, len(child_dict_keys)):
+        key = child_dict_keys[idx]
+        if key in final_result_keys:
+            sum_val = final_result[key]+child_result[key]
+            final_result[key] = sum_val
+        else:
+            final_result = {**final_result, key: child_result[key]}
+    return final_result
 
 
 @omp
-def occureence_arrangement(array):
-    print("\n\t counter_dict: array", array)
+def occurence_arrangement(array:list):
     counter_dict = {}
-    for elemnts in array:
-        try:
-            counter_dict[str(elemnts)] = counter_dict[str(elemnts)]+1
-        except:
-            counter_dict = {**counter_dict, f"{str(elemnts)}": 1}
-    print("\n\t counter_dict: ", counter_dict)
+    # print("\n\t len(array): ", len(array))
+    with omp("for"):
+        for idx in range(len(array)):
+            element = array[idx]
+            try:
+                counter_dict[str(element)] = counter_dict[str(element)]+1
+            except:
+                counter_dict = {**counter_dict, f"{str(element)}": 1}
     return counter_dict
 
 @omp
@@ -58,24 +72,18 @@ def count_elements_occurrences(array_length):
     generated_array = generate_array_elements(array_length)
     # print("\n\t generated_array: ", generated_array)
     first_half = len(generated_array)//2
-    counter_dict1 = {}
-    counter_dict2 = {}
-    counter_occ = {}
-    with omp("parallel"): # parallel region
+    final_result = {}
+    with omp("parallel shared(final_result)"): # parallel region, designate shared variable, to collect results 
         with omp("sections"): # job sharing
             with omp("section"): # share first half of generated list 
-                counter_dict1 = occureence_arrangement(generated_array[0:first_half])
+                counter_dict1 = occurence_arrangement(generated_array[0:first_half])
+                final_result = final_result_proc(counter_dict1, final_result)
             with omp("section"): # share last half of the generated list 
-                counter_dict2 = occureence_arrangement(generated_array[first_half:len(generated_array)-1])
-    dict1_keys = counter_dict1.keys()
-   
+                counter_dict2 = occurence_arrangement(generated_array[first_half:len(generated_array)])
+                final_result = final_result_proc(counter_dict2, final_result)
+    return final_result
    
 
-
-    print("\n\t counter_occ: ", counter_occ)
-    
-    return counter_dict2
-    
 
 if __name__ == "__main__":
     array_length = get_array_size()
